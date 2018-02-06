@@ -15,7 +15,7 @@ const CLIENT_SECRET = ''; // client secret of your app - get from https://develo
 config.auth.client_id = CLIENT_ID;
 config.auth.client_secret = CLIENT_SECRET;
 config.auth.redirect_uri = ''; // callback url of your app - get from https://developers.eveonline.com/applications
-config.auth.scope = ''; // list of scopes - get from https://developers.eveonline.com/applications
+config.auth.scopes = ''; // list of scopes - get from https://developers.eveonline.com/applications
 config.auth.port = 1337; // port you listen on with express for auth
 
 
