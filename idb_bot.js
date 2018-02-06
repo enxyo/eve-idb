@@ -65,7 +65,7 @@ function getJobs(status, callback) {
 }
 
 function getNextJob(callback) {
-		var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.status = ? ORDER BY eveJobs.end_date';
+		var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status = ? ORDER BY eveJobs.end_date';
 		var query = connection.query(sql_query, ['active'], function (error, results, fields)
 		{
 			if (error) return console.log('ERROR: An unexpected SQL error occured.');
