@@ -1,4 +1,4 @@
-const config = require('/cfg/config');
+const config = require('./cfg/config');
 const qs = require('querystring');
 const request = require('request');
 const schedule = require('node-schedule');
@@ -9,8 +9,8 @@ const schedule = require('node-schedule');
 *******************************************/
 
 var taskSchedule = new schedule.RecurrenceRule();
-taskSchedule.minute = 59;
-taskSchedule.hour = 15;
+taskSchedule.minute = 0;
+taskSchedule.hour = 16;
 
 
 /*******************************************
@@ -53,15 +53,30 @@ var connection = mysql.createConnection({
 
 var active, ready;
 
-function getJobs(status, callback) {
-		var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.status=?';
-		var query = connection.query(sql_query, [status], function (error, results, fields)
-		{
-			if (error) return console.log('ERROR: An unexpected SQL error occured.');
-			res = results.length;
-			callback();
-		});
-		//console.log(query.sql);
+function getActives(status, callback) {
+
+    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.status=?';
+
+	var query = connection.query(sql_query, [status], function (error, results, fields)
+	{
+		if (error) return console.log('ERROR: An unexpected SQL error occured.');
+		res = results.length;
+		callback();
+	});
+	//console.log(query.sql);
+}
+
+function getReady(status, callback) {
+
+    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status=?';
+
+	var query = connection.query(sql_query, [status], function (error, results, fields)
+	{
+		if (error) return console.log('ERROR: An unexpected SQL error occured.');
+		res = results.length;
+		callback();
+	});
+	//console.log(query.sql);
 }
 
 function getNextJob(callback) {
@@ -133,16 +148,16 @@ client.on("message", (message) => {
 	}
 
 	if (command === 'test') {
-		getJobs('active',activeJobs);
-		getJobs('ready',readyJobs);
+		getActives('active',activeJobs);
+		getReady('ready',readyJobs);
 		getNextJob(nextJob);
 	}
 
 });
 
 function start() {
-	getJobs('active',activeJobs);
-	getJobs('ready',readyJobs);
+    getActives('active',activeJobs);
+    getReady('ready',readyJobs);
 	getNextJob(nextJob);
 	//console.log('executed scheduled job');
 }

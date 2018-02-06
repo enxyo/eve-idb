@@ -1,4 +1,4 @@
-const config = require('/cfg/config');
+const config = require('./cfg/config');
 
 const qs = require('querystring');
 const request = require('request');
