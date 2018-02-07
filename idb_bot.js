@@ -133,7 +133,7 @@ function getJobList(callback) {
 
         for(var i=0; i<results.length; i++) {
             if((i != 0) && ((i%10) == 0)) {
-                console.log(jobList);
+                //console.log(jobList);
                 client.channels.get('298828880452517889').send(jobList);
                 jobList = '**List of active jobs:**\n';
             }
@@ -147,7 +147,7 @@ function getJobList(callback) {
             difference -= minutesDifference*1000*60;
             var secondsDifference = Math.floor(difference/1000);
 
-            jobList += '**' + results[i].runs + '**x **' + results[i].typeName + '** on *' + results[i].characterName + '* finished in **' + daysDifference + '** day **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference +'** seconds\n';
+            jobList += '**' + results[i].runs + '**x **' + results[i].typeName + '** on *' + results[i].characterName + '* finishes in **' + daysDifference + 'd-' + hoursDifference + 'h:' + minutesDifference + 'm:' + secondsDifference + 's**\n';
             if( 0 === --pending ) {
                 callback(results.length); //callback if all results are processed
             }
@@ -190,9 +190,10 @@ client.on("message", (message) => {
 	}
 
 	if (command  === 'ping') {
-		var now = new Date();
-		message.author.send('Replying at ' + now);
-		message.channel.send('**I have send you a DM.**');
+        var now = new Date();
+        message.author.send('Replying at ' + now);
+        message.channel.send('**I have send you a DM.**');
+
 	}
 
     if (command  === 'list') {
