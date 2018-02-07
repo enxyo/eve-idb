@@ -79,6 +79,14 @@ function getReady(status, callback) {
 	//console.log(query.sql);
 }
 
+function activeJobs(){
+	active = res;
+}
+
+function readyJobs(){
+	ready = res;
+}
+
 function getNextJob(callback) {
 		var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status = ? ORDER BY eveJobs.end_date';
 		var query = connection.query(sql_query, ['active'], function (error, results, fields)
@@ -90,14 +98,6 @@ function getNextJob(callback) {
 			callback();
 		});
 		//console.log(query.sql);
-}
-
-function activeJobs(){
-	active = res;
-}
-
-function readyJobs(){
-	ready = res;
 }
 
 function nextJob() {
@@ -118,6 +118,28 @@ function nextJob() {
     var secondsDifference = Math.floor(difference/1000);
 
 	client.channels.get('122175912983658500').send('<@120982046817386499> **Daily Industry Report**\nThere are **' + active + '** active jobs and **' + ready + '** jobs ready.\n\nNext Job is ready on **' + characterName + '** in **' + daysDifference + '** days **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference + '** seconds.\nOn '+ endDate + '\n\n*Type .list for full job list.*');
+}
+
+function getJobList(callback) {
+	var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status = ? ORDER BY eveJobs.end_date';
+	var query = connection.query(sql_query, ['active'], function (error, results, fields)
+	{
+		if (error) return console.log('ERROR: An unexpected SQL error occured.');
+        var pending = results.length;
+        var jobList = '**List of active jobs:**\n';
+
+        for(var i=0; i<results.length; i++) {
+            jobList += '**' + results[i].runs + '**x **' + results[i].typeName + '** on ' + results[i].characterName + 'finished on **' + results[i].endDate + '**';
+            if( 0 === --pending ) {
+                callback(); //callback if all results are processed
+            }
+        }
+	});
+	//console.log(query.sql);
+}
+
+function printJobList(){
+    message.author.send(jobList);
 }
 
 client.on("ready", () => {
@@ -147,10 +169,13 @@ client.on("message", (message) => {
 		message.channel.send('**I have send you a DM.**');
 	}
 
+    if (command  === 'list') {
+		getJobList(printJobList);
+	}
+
 	if (command === 'test') {
-		getActives('active',activeJobs);
-		getReady('ready',readyJobs);
-		getNextJob(nextJob);
+		var oo = message.author;
+        message.channel.send(oo);
 	}
 
 });
