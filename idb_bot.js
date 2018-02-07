@@ -132,21 +132,26 @@ function getJobList(callback) {
         jobList = '**List of active jobs:**\n';
 
         for(var i=0; i<results.length; i++) {
+            if((i != 0) && ((i%10) == 0)) {
+                console.log(jobList);
+                client.channels.get('298828880452517889').send(jobList);
+                jobList = '**List of active jobs:**\n';
+            }
             jobList += '**' + results[i].runs + '**x **' + results[i].typeName + '** on *' + results[i].characterName + '* finished on **' + results[i].end_date + '**\n';
             if( 0 === --pending ) {
-                callback(); //callback if all results are processed
+                callback(results.length); //callback if all results are processed
             }
         }
 	});
 	//console.log(query.sql);
 }
 
-function printJobList(){
-    var jle = jobList.length;
-    var ji = jobList.indexOf('\n')
-    var jc = (jobList.match(/\n/g) || []).length;
-    console.log(jc);
-    //client.channels.get('298828880452517889').send(jobList);
+function printJobList(total){
+    if((total%10) != 0) {
+        client.channels.get('298828880452517889').send(jobList);
+    }
+    //console.log('done');
+
 }
 
 client.on("ready", () => {
