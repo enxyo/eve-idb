@@ -2,6 +2,7 @@ const config = require('./cfg/config');
 const qs = require('querystring');
 const request = require('request');
 const schedule = require('node-schedule');
+const stringSearcher = require('string-search');
 
 
 /*******************************************
@@ -47,6 +48,8 @@ var connection = mysql.createConnection({
 });
 
 
+var jobList;
+
 /*******************************************
 **
 *******************************************/
@@ -55,7 +58,7 @@ var active, ready;
 
 function getActives(status, callback) {
 
-    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.status=?';
+    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status=?';
 
 	var query = connection.query(sql_query, [status], function (error, results, fields)
 	{
@@ -68,7 +71,7 @@ function getActives(status, callback) {
 
 function getReady(status, callback) {
 
-    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status=?';
+    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date < now() AND eveJobs.status=?';
 
 	var query = connection.query(sql_query, [status], function (error, results, fields)
 	{
@@ -126,10 +129,10 @@ function getJobList(callback) {
 	{
 		if (error) return console.log('ERROR: An unexpected SQL error occured.');
         var pending = results.length;
-        var jobList = '**List of active jobs:**\n';
+        jobList = '**List of active jobs:**\n';
 
         for(var i=0; i<results.length; i++) {
-            jobList += '**' + results[i].runs + '**x **' + results[i].typeName + '** on ' + results[i].characterName + 'finished on **' + results[i].endDate + '**';
+            jobList += '**' + results[i].runs + '**x **' + results[i].typeName + '** on *' + results[i].characterName + '* finished on **' + results[i].end_date + '**\n';
             if( 0 === --pending ) {
                 callback(); //callback if all results are processed
             }
@@ -139,7 +142,11 @@ function getJobList(callback) {
 }
 
 function printJobList(){
-    message.author.send(jobList);
+    var jle = jobList.length;
+    var ji = jobList.indexOf('\n')
+    var jc = (jobList.match(/\n/g) || []).length;
+    console.log(jc);
+    //client.channels.get('298828880452517889').send(jobList);
 }
 
 client.on("ready", () => {
@@ -154,10 +161,14 @@ client.on("message", (message) => {
 	const args = message.content.slice(prefix.length).trim().toLowerCase().split(/ +/g);
 	const command = args.shift().toLowerCase();
 
+    /*
+        aniles 122341111460003840
+        infy 150742643486228480
 	if(message.author.id !== '120982046817386499') {
 		message.reply('Access denied!');
 		return;
 	}
+    */
 
 	if (command  === 'help') {
 		message.channel.send('**Dir ist nicht zu helfen**');
@@ -173,6 +184,11 @@ client.on("message", (message) => {
 		getJobList(printJobList);
 	}
 
+
+    if (command  === 'info') {
+    	start();
+    }
+
 	if (command === 'test') {
 		var oo = message.author;
         message.channel.send(oo);
@@ -182,7 +198,7 @@ client.on("message", (message) => {
 
 function start() {
     getActives('active',activeJobs);
-    getReady('ready',readyJobs);
+    getReady('active',readyJobs);
 	getNextJob(nextJob);
 	//console.log('executed scheduled job');
 }
