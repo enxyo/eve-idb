@@ -137,7 +137,17 @@ function getJobList(callback) {
                 client.channels.get('298828880452517889').send(jobList);
                 jobList = '**List of active jobs:**\n';
             }
-            jobList += '**' + results[i].runs + '**x **' + results[i].typeName + '** on *' + results[i].characterName + '* finished on **' + results[i].end_date + '**\n';
+            var currentDate = new Date();
+            var difference = results[i].end_date.getTime() - currentDate.getTime();
+            var daysDifference = Math.floor(difference/1000/60/60/24);
+            difference -= daysDifference*1000*60*60*24;
+            var hoursDifference = Math.floor(difference/1000/60/60);
+            difference -= hoursDifference*1000*60*60;
+            var minutesDifference = Math.floor(difference/1000/60);
+            difference -= minutesDifference*1000*60;
+            var secondsDifference = Math.floor(difference/1000);
+
+            jobList += '**' + results[i].runs + '**x **' + results[i].typeName + '** on *' + results[i].characterName + '* finished in **' + daysDifference + '** day **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference +'** seconds\n';
             if( 0 === --pending ) {
                 callback(results.length); //callback if all results are processed
             }
