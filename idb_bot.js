@@ -11,8 +11,8 @@ const Q = require('q');
 *******************************************/
 
 var taskSchedule = new schedule.RecurrenceRule();
-taskSchedule.minute = 0;
-taskSchedule.hour = 16;
+taskSchedule.minute = 40;
+taskSchedule.hour = 17;
 
 
 /*******************************************
@@ -54,75 +54,6 @@ var jobList;
 /*******************************************
 **
 *******************************************/
-
-var active, ready;
-
-function getActives(status, callback) {
-
-    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status=?';
-
-	var query = connection.query(sql_query, [status], function (error, results, fields)
-	{
-		if (error) return console.log('ERROR: An unexpected SQL error occured.');
-		res = results.length;
-		callback();
-	});
-	//console.log(query.sql);
-}
-
-function getReady(status, callback) {
-
-    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date < now() AND eveJobs.status=?';
-
-	var query = connection.query(sql_query, [status], function (error, results, fields)
-	{
-		if (error) return console.log('ERROR: An unexpected SQL error occured.');
-		res = results.length;
-		callback();
-	});
-	//console.log(query.sql);
-}
-
-function activeJobs(){
-	active = res;
-}
-
-function readyJobs(){
-	ready = res;
-}
-
-function getNextJob(callback) {
-		var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status = ? ORDER BY eveJobs.end_date';
-		var query = connection.query(sql_query, ['active'], function (error, results, fields)
-		{
-			if (error) return console.log('ERROR: An unexpected SQL error occured.');
-			characterName = results[0].characterName;
-			typeName = results[0].typeName;
-			endDate = results[0].end_date;
-			callback();
-		});
-		//console.log(query.sql);
-}
-
-function nextJob() {
-
-	var currentDate = new Date();
-
-	var difference = endDate.getTime() - currentDate.getTime();
-
-    var daysDifference = Math.floor(difference/1000/60/60/24);
-    difference -= daysDifference*1000*60*60*24;
-
-    var hoursDifference = Math.floor(difference/1000/60/60);
-    difference -= hoursDifference*1000*60*60;
-
-    var minutesDifference = Math.floor(difference/1000/60);
-    difference -= minutesDifference*1000*60;
-
-    var secondsDifference = Math.floor(difference/1000);
-
-	client.channels.get('122175912983658500').send('<@120982046817386499> **Daily Industry Report**\nThere are **' + active + '** active jobs and **' + ready + '** jobs ready.\n\nNext Job is ready on **' + characterName + '** in **' + daysDifference + '** days **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference + '** seconds.\nOn '+ endDate + '\n\n*Type .list for full job list.*');
-}
 
 function getJobList(callback) {
 	var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status = ? ORDER BY eveJobs.end_date';
@@ -278,11 +209,22 @@ client.on("message", (message) => {
 });
 
 function start() {
-    getActives('active',activeJobs);
-    getReady('active',readyJobs);
-	getNextJob(nextJob);
+    Q.all([getActiveJobs('98068725'),getReadyJobs('98068725'),getNextJobs('98068725')]).spread(function(active,ready,next) {
+        var currentDate = new Date();
+        var difference = next[0].end_date.getTime() - currentDate.getTime();
+        var daysDifference = Math.floor(difference/1000/60/60/24);
+        difference -= daysDifference*1000*60*60*24;
+        var hoursDifference = Math.floor(difference/1000/60/60);
+        difference -= hoursDifference*1000*60*60;
+        var minutesDifference = Math.floor(difference/1000/60);
+        difference -= minutesDifference*1000*60;
+        var secondsDifference = Math.floor(difference/1000);
+
+        client.channels.get('122175912983658500').send('<@120982046817386499> **Daily Industry Report**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.\n\nNext Job is ready on **' + next[0].characterName + '** in **' + daysDifference + '** days **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference + '** seconds.\nOn '+ next[0].end_date + '\n\n*Type .list for full job list.*');
+    }).done();
 	//console.log('executed scheduled job');
 }
+
 
 schedule.scheduleJob(taskSchedule, start);
 //console.log('The schdule has been initialzed');
