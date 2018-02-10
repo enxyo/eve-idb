@@ -4,6 +4,7 @@ const request = require('request');
 const schedule = require('node-schedule');
 const stringSearcher = require('string-search');
 
+const Q = require('q');
 
 /*******************************************
 ** TASK SCHEDULE setup
@@ -164,6 +165,58 @@ function printJobList(total){
 
 }
 
+function getActiveJobs(corp) {
+    var deferred = Q.defer();
+
+    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status=? AND eveJobs.corporationID=?';
+    var query = connection.query(sql_query, ['active',corp], function (error, results, fields)
+    {
+        if (error) {
+            deferred.reject(error);
+        }
+        else {
+            deferred.resolve(results);
+        }
+    });
+    //console.log(query.sql);
+    return deferred.promise;
+}
+
+function getReadyJobs(corp) {
+    var deferred = Q.defer();
+
+    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date < now() AND eveJobs.status=? AND eveJobs.corporationID=?';
+    var query = connection.query(sql_query, ['active',corp], function (error, results, fields)
+    {
+        if (error) {
+            deferred.reject(error);
+        }
+        else {
+            deferred.resolve(results);
+        }
+    });
+    //console.log(query.sql);
+    return deferred.promise;
+}
+
+function getNextJobs(corp) {
+    var deferred = Q.defer();
+
+    var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status = ? AND eveJobs.corporationID=? ORDER BY eveJobs.end_date';
+    var query = connection.query(sql_query, ['active',corp], function (error, results, fields)
+    {
+        if (error) {
+            deferred.reject(error);
+        }
+        else {
+            deferred.resolve(results);
+        }
+    });
+    //console.log(query.sql);
+    return deferred.promise;
+}
+
+
 client.on("ready", () => {
     console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
     client.user.setPresence({ game: { name: 'with BPOs', type: 0 } });
@@ -202,7 +255,19 @@ client.on("message", (message) => {
 
 
     if (command  === 'info') {
-    	start();
+        Q.all([getActiveJobs('98068725'),getReadyJobs('98068725'),getNextJobs('98068725')]).spread(function(active,ready,next) {
+            var currentDate = new Date();
+            var difference = next[0].end_date.getTime() - currentDate.getTime();
+            var daysDifference = Math.floor(difference/1000/60/60/24);
+            difference -= daysDifference*1000*60*60*24;
+            var hoursDifference = Math.floor(difference/1000/60/60);
+            difference -= hoursDifference*1000*60*60;
+            var minutesDifference = Math.floor(difference/1000/60);
+            difference -= minutesDifference*1000*60;
+            var secondsDifference = Math.floor(difference/1000);
+
+            message.reply('**Daily Industry Report**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.\n\nNext Job is ready on **' + next[0].characterName + '** in **' + daysDifference + '** days **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference + '** seconds.\nOn '+ next[0].end_date + '\n\n*Type .list for full job list.*');
+        }).done();
     }
 
 	if (command === 'test') {
