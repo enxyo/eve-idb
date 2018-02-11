@@ -11,7 +11,7 @@ const Q = require('q');
 *******************************************/
 
 var taskSchedule = new schedule.RecurrenceRule();
-taskSchedule.minute = 00;
+taskSchedule.minute = 0;
 taskSchedule.hour = 16;
 
 
@@ -289,27 +289,43 @@ client.on("message", (message) => {
     }
 
 	if (command === 'test') {
-		var oo = message.author;
-        message.channel.send(oo);
+        dm();
+        message.channel.send('**I have send you a DM.**');
 	}
 
 });
 
 function start() {
-    Q.all([getActiveJobs('98068725'),getReadyJobs('98068725'),getNextJobs('98068725')]).spread(function(active,ready,next) {
-        var currentDate = new Date();
-        var difference = next[0].end_date.getTime() - currentDate.getTime();
-        var daysDifference = Math.floor(difference/1000/60/60/24);
-        difference -= daysDifference*1000*60*60*24;
-        var hoursDifference = Math.floor(difference/1000/60/60);
-        difference -= hoursDifference*1000*60*60;
-        var minutesDifference = Math.floor(difference/1000/60);
-        difference -= minutesDifference*1000*60;
-        var secondsDifference = Math.floor(difference/1000);
+    var dmUser = client.users.get('120982046817386499');
 
-        client.channels.get('122175912983658500').send('<@120982046817386499> **Daily Industry Report**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.\n\nNext Job is ready on **' + next[0].characterName + '** in **' + daysDifference + '** days **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference + '** seconds.\nOn '+ next[0].end_date + '\n\n*Type .list for full job list.*');
+
+    Q.all([getUser('120982046817386499')]).spread(function(user) {
+        for(var i=0;i<user.length;i++) {
+            Q.all([getActiveJobs(user[i].corporationID),getReadyJobs(user[i].corporationID),getNextJobs(user[i].corporationID),getCorpName(user[i].corporationID)]).spread(function(active,ready,next,corp) {
+                if (next.length != 0) {
+                    var currentDate = new Date();
+                    var difference = next[0].end_date.getTime() - currentDate.getTime();
+                    var daysDifference = Math.floor(difference/1000/60/60/24);
+                    difference -= daysDifference*1000*60*60*24;
+                    var hoursDifference = Math.floor(difference/1000/60/60);
+                    difference -= hoursDifference*1000*60*60;
+                    var minutesDifference = Math.floor(difference/1000/60);
+                    difference -= minutesDifference*1000*60;
+                    var secondsDifference = Math.floor(difference/1000);
+                    dmUser.send('<@120982046817386499> **Industry Report - ' + corp[0].corporationName + '**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.\n\nNext Job is ready on **' + next[0].characterName + '** in **' + daysDifference + '** days **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference + '** seconds.\nOn '+ next[0].end_date + '\n\n*Type .list for full job list.*');
+                }
+                else {
+                    dmUser.send('<@120982046817386499> **Industry Report - ' + corp[0].corporationName + '**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.');
+                }
+            }).done();
+        }
     }).done();
 	//console.log('executed scheduled job');
+}
+
+function dm() {
+    var duser = client.users.get('120982046817386499');
+    duser.send('<content>');
 }
 
 
