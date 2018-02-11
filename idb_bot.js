@@ -210,49 +210,53 @@ client.on("message", (message) => {
 	}
 
     if (command  === 'list') {
-		Q.all([getActiveJobs('98068725'),getReadyJobs('98068725'),getNextJobs('98068725'),getReadyJobsCount('98068725'),getActiveJobsList('98068725')]).spread(function(active,ready,next,count,list) {
-            var msg = '**Job list for <insert corporation>**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.';
-            if(count.length != 0) {
-                msg += ' *(';
-                for (var i = 0;i < count.length; i++) {
-                    msg += ' ' + count[0].jobCount + ' - ' + count[0].characterName + ' ';
+        Q.all([getUser(message.author.id)]).spread(function(user) {
+            if (user.length != 0) {
+                for(var i=0;i<user.length;i++) {
+                    Q.all([getActiveJobs(user[i].corporationID),getReadyJobs(user[i].corporationID),getNextJobs(user[i].corporationID),getReadyJobsCount(user[i].corporationID),getActiveJobsList(user[i].corporationID),getCorpName(user[i].corporationID)]).spread(function(active,ready,next,count,list,corp) {
+                        var msg = '**Job list for ' + corp[0].corporationName + '**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.';
+                        if(count.length != 0) {
+                            msg += ' *(';
+                            for (var i = 0;i < count.length; i++) {
+                                msg += ' ' + count[0].jobCount + ' - ' + count[0].characterName + ' ';
+                            }
+                            msg +=')*\n\n';
+                        }
+                        message.reply(msg);
+
+                        var jobList = '**List of active jobs:**\n';
+
+                        for(var i=0; i<list.length; i++) {
+                            if((i != 0) && ((i%10) == 0)) {
+                                //console.log(jobList);
+                                message.reply(jobList);
+                                jobList = '**List of active jobs:**\n';
+                            }
+                            var currentDate = new Date();
+                            var difference = list[i].end_date.getTime() - currentDate.getTime();
+                            var daysDifference = Math.floor(difference/1000/60/60/24);
+                            difference -= daysDifference*1000*60*60*24;
+                            var hoursDifference = Math.floor(difference/1000/60/60);
+                            difference -= hoursDifference*1000*60*60;
+                            var minutesDifference = Math.floor(difference/1000/60);
+                            difference -= minutesDifference*1000*60;
+                            var secondsDifference = Math.floor(difference/1000);
+
+                            jobList += '**' + list[i].runs + '**x **' + list[i].typeName + '** on *' + list[i].characterName + '* finishes in **' + daysDifference + 'd-' + hoursDifference + 'h:' + minutesDifference + 'm:' + secondsDifference + 's**\n';
+
+                        }
+
+                        if((list.length%10) != 0) {
+                            message.reply(jobList);
+                        }
+
+                    }).done();
                 }
-                msg +=')*\n\n';
+            } else {
+                message.reply('I do not know you.');
             }
-            message.reply(msg);
-
-            var jobList = '**List of active jobs:**\n';
-
-            for(var i=0; i<list.length; i++) {
-                if((i != 0) && ((i%10) == 0)) {
-                    //console.log(jobList);
-                    message.reply(jobList);
-                    jobList = '**List of active jobs:**\n';
-                }
-                var currentDate = new Date();
-                var difference = list[i].end_date.getTime() - currentDate.getTime();
-                var daysDifference = Math.floor(difference/1000/60/60/24);
-                difference -= daysDifference*1000*60*60*24;
-                var hoursDifference = Math.floor(difference/1000/60/60);
-                difference -= hoursDifference*1000*60*60;
-                var minutesDifference = Math.floor(difference/1000/60);
-                difference -= minutesDifference*1000*60;
-                var secondsDifference = Math.floor(difference/1000);
-
-                jobList += '**' + list[i].runs + '**x **' + list[i].typeName + '** on *' + list[i].characterName + '* finishes in **' + daysDifference + 'd-' + hoursDifference + 'h:' + minutesDifference + 'm:' + secondsDifference + 's**\n';
-
-            }
-
-            if((list.length%10) != 0) {
-                message.reply(jobList);
-            }
-
         }).done();
 	}
-
-    if (command === 'user') {
-
-    }
 
     if (command  === 'info') {
         Q.all([getUser(message.author.id)]).spread(function(user) {
