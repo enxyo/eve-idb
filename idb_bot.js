@@ -11,8 +11,8 @@ const Q = require('q');
 *******************************************/
 
 var taskSchedule = new schedule.RecurrenceRule();
-taskSchedule.minute = 40;
-taskSchedule.hour = 17;
+taskSchedule.minute = 00;
+taskSchedule.hour = 16;
 
 
 /*******************************************
@@ -138,6 +138,40 @@ function getActiveJobsList(corp) {
     return deferred.promise;
 }
 
+function getUser(discordUser) {
+    var deferred = Q.defer();
+
+    var sql_query = 'SELECT * FROM users WHERE users.discordID=?';
+    var query = connection.query(sql_query, [discordUser], function (error, results, fields)
+    {
+        if (error) {
+            deferred.reject(error);
+        }
+        else {
+            deferred.resolve(results);
+        }
+    });
+    //console.log(query.sql);
+    return deferred.promise;
+}
+
+function getCorpName(corporationID) {
+    var deferred = Q.defer();
+
+    var sql_query = 'SELECT * FROM corporations WHERE corporations.corporationID=?';
+    var query = connection.query(sql_query, [corporationID], function (error, results, fields)
+    {
+        if (error) {
+            deferred.reject(error);
+        }
+        else {
+            deferred.resolve(results);
+        }
+    });
+    //console.log(query.sql);
+    return deferred.promise;
+}
+
 
 /*******************************************
 ** DISCORD
@@ -216,19 +250,37 @@ client.on("message", (message) => {
         }).done();
 	}
 
-    if (command  === 'info') {
-        Q.all([getActiveJobs('98068725'),getReadyJobs('98068725'),getNextJobs('98068725')]).spread(function(active,ready,next) {
-            var currentDate = new Date();
-            var difference = next[0].end_date.getTime() - currentDate.getTime();
-            var daysDifference = Math.floor(difference/1000/60/60/24);
-            difference -= daysDifference*1000*60*60*24;
-            var hoursDifference = Math.floor(difference/1000/60/60);
-            difference -= hoursDifference*1000*60*60;
-            var minutesDifference = Math.floor(difference/1000/60);
-            difference -= minutesDifference*1000*60;
-            var secondsDifference = Math.floor(difference/1000);
+    if (command === 'user') {
 
-            message.reply('**Daily Industry Report**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.\n\nNext Job is ready on **' + next[0].characterName + '** in **' + daysDifference + '** days **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference + '** seconds.\nOn '+ next[0].end_date + '\n\n*Type .list for full job list.*');
+    }
+
+    if (command  === 'info') {
+        Q.all([getUser(message.author.id)]).spread(function(user) {
+            if (user.length != 0) {
+                for(var i=0;i<user.length;i++) {
+                    Q.all([getActiveJobs(user[i].corporationID),getReadyJobs(user[i].corporationID),getNextJobs(user[i].corporationID),getCorpName(user[i].corporationID)]).spread(function(active,ready,next,corp) {
+                        if (next.length != 0) {
+                            var currentDate = new Date();
+                            var difference = next[0].end_date.getTime() - currentDate.getTime();
+                            var daysDifference = Math.floor(difference/1000/60/60/24);
+                            difference -= daysDifference*1000*60*60*24;
+                            var hoursDifference = Math.floor(difference/1000/60/60);
+                            difference -= hoursDifference*1000*60*60;
+                            var minutesDifference = Math.floor(difference/1000/60);
+                            difference -= minutesDifference*1000*60;
+                            var secondsDifference = Math.floor(difference/1000);
+
+                            message.reply('**Industry Report - ' + corp[0].corporationName + '**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.\n\nNext Job is ready on **' + next[0].characterName + '** in **' + daysDifference + '** days **' + hoursDifference + '** hours **' + minutesDifference + '** minutes **' + secondsDifference + '** seconds.\nOn '+ next[0].end_date + '\n\n*Type .list for full job list.*');
+                        }
+                        else {
+                            message.reply('**Industry Report - ' + corp[0].corporationName + '**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.');
+                        }
+
+                    }).done();
+                }
+            } else {
+                message.reply('I do not know you.');
+            }
         }).done();
     }
 
