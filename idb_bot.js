@@ -1,8 +1,7 @@
-const config = require('./cfg/config');
-const qs = require('querystring');
-const request = require('request');
-const schedule = require('node-schedule');
-const stringSearcher = require('string-search');
+const CONFIG = require('./cfg/config');
+const QS = require('querystring');
+const REQUEST = require('request');
+const SCHEDULE = require('node-schedule');
 
 const Q = require('q');
 
@@ -10,7 +9,7 @@ const Q = require('q');
 ** TASK SCHEDULE setup
 *******************************************/
 
-var taskSchedule = new schedule.RecurrenceRule();
+var taskSchedule = new SCHEDULE.RecurrenceRule();
 taskSchedule.minute = 0;
 taskSchedule.hour = 16;
 
@@ -19,33 +18,33 @@ taskSchedule.hour = 16;
 ** DISCORD setup
 *******************************************/
 
-const Discord = require("discord.js");
-const client = new Discord.Client();
-const token = config.discord.token;
+const DISCORD = require("discord.js");
+const CLIENT = new DISCORD.Client();
+const TOKEN = CONFIG.discord.token;
 
 // Set the prefix
-const prefix = ".";
+const PREFIX = ".";
 
 
 /*******************************************
 ** EVE setup
 *******************************************/
 
-const client_id = config.eve.client_id;
-const client_secret = config.eve.client_secret;
-const ESI_URL = config.eve.url;
-const DATASOURCE = config.eve.datasource;
+const CLIENT_ID = CONFIG.eve.client_id;
+const CLIENT_SECRET = CONFIG.eve.client_secret;
+const ESI_URL = CONFIG.eve.url;
+const DATASOURCE = CONFIG.eve.datasource;
 
 
 /*******************************************
 ** MYSQL setup
 *******************************************/
-const mysql = require('mysql');
-var connection = mysql.createConnection({
-    host     : config.mysql.host,
-    user     : config.mysql.user,
-    password : config.mysql.password,
-    database : config.mysql.database
+const MYSQL = require('mysql');
+var connection = MYSQL.createConnection({
+    host     : CONFIG.mysql.host,
+    user     : CONFIG.mysql.user,
+    password : CONFIG.mysql.password,
+    database : CONFIG.mysql.database
 });
 
 
@@ -177,17 +176,17 @@ function getCorpName(corporationID) {
 ** DISCORD
 *******************************************/
 
-client.on("ready", () => {
-    console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
-    client.user.setPresence({ game: { name: 'with BPOs', type: 0 } });
+CLIENT.on("ready", () => {
+    console.log(`Bot has started, with ${CLIENT.users.size} users, in ${CLIENT.channels.size} channels of ${CLIENT.guilds.size} guilds.`);
+    CLIENT.user.setPresence({ game: { name: 'with BPOs', type: 0 } });
 });
 
-client.on("message", (message) => {
+CLIENT.on("message", (message) => {
 	if(message.author.bot) return;
-	if(message.content.indexOf(prefix) !== 0) return;
+	if(message.content.indexOf(PREFIX) !== 0) return;
 
-	const args = message.content.slice(prefix.length).trim().toLowerCase().split(/ +/g);
-	const command = args.shift().toLowerCase();
+	const ARGS = message.content.slice(PREFIX.length).trim().toLowerCase().split(/ +/g);
+	const COMMAND = ARGS.shift().toLowerCase();
 
     /*
         aniles 122341111460003840
@@ -198,18 +197,18 @@ client.on("message", (message) => {
 	}
     */
 
-	if (command  === 'help') {
+	if (COMMAND  === 'help') {
 		message.channel.send('**Dir ist nicht zu helfen**');
 	}
 
-	if (command  === 'ping') {
+	if (COMMAND  === 'ping') {
         var now = new Date();
         message.author.send('Replying at ' + now);
         message.channel.send('**I have send you a DM.**');
 
 	}
 
-    if (command  === 'list') {
+    if (COMMAND  === 'list') {
         Q.all([getUser(message.author.id)]).spread(function(user) {
             if (user.length != 0) {
                 for(var i=0;i<user.length;i++) {
@@ -258,7 +257,7 @@ client.on("message", (message) => {
         }).done();
 	}
 
-    if (command  === 'info') {
+    if (COMMAND  === 'info') {
         Q.all([getUser(message.author.id)]).spread(function(user) {
             if (user.length != 0) {
                 for(var i=0;i<user.length;i++) {
@@ -288,15 +287,41 @@ client.on("message", (message) => {
         }).done();
     }
 
-	if (command === 'test') {
-        dm();
-        message.channel.send('**I have send you a DM.**');
+	if (COMMAND === 'rm') {
+        if (ARGS.length != 4) {
+            return message.channel.send(`Invalid input use: *.rm [0...\∞] [0...23] [0...60] <comment>*, ${message.author}!`);
+        }
+
+        var rm_d = parseInt(ARGS[0]);
+        var rm_h = parseInt(ARGS[1]);
+        var rm_m = parseInt(ARGS[2]);
+        var rm_c = ARGS[3];
+
+        if (isNaN(rm_d)) {
+            return message.reply('1 Invalid input use: *.rm [0...\∞] [0...23] [0...60] <comment>*');
+        }
+        else if (isNaN(rm_h)) {
+            return message.reply('2 Invalid input use: *.rm [0...\∞] [0...23] [0...60] <comment>*');
+        }
+        else if (rm_h < -1 || rm_h > 24 ) {
+            return message.reply('3 Invalid input use: *.rm [0...\∞] [0...23] [0...60] <comment>*');
+        }
+        else if (isNaN(rm_m)) {
+            return message.reply('4 Invalid input use: *.rm [0...\∞] [0...23] [0...60] <comment>*');
+        }
+        else if (rm_m < -1 || rm_m > 60 ) {
+            return message.reply('5 Invalid input use: *.rm [0...\∞] [0...23] [0...60] <comment>*');
+        }
+        else {
+            message.reply(rm_d + ' ' + rm_h + '' + rm_m + ' ' + rm_c);
+        }
+
 	}
 
 });
 
 function start() {
-    var dmUser = client.users.get('120982046817386499');
+    var dmUser = CLIENT.users.get('120982046817386499');
 
 
     Q.all([getUser('120982046817386499')]).spread(function(user) {
@@ -324,12 +349,12 @@ function start() {
 }
 
 function dm() {
-    var duser = client.users.get('120982046817386499');
+    var duser = CLIENT.users.get('120982046817386499');
     duser.send('<content>');
 }
 
 
-schedule.scheduleJob(taskSchedule, start);
+SCHEDULE.scheduleJob(taskSchedule, start);
 //console.log('The schdule has been initialzed');
 
-client.login(token);
+CLIENT.login(TOKEN);
