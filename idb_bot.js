@@ -1,15 +1,15 @@
-const CONFIG = require('./cfg/config');
-const QS = require('querystring');
-const REQUEST = require('request');
-const SCHEDULE = require('node-schedule');
+const config = require('./cfg/config');
+const qs = require('querystring');
+const request = require('request');
+const schedule = require('node-schedule');
 
-const Q = require('q');
+const q = require('q');
 
 /*******************************************
 ** TASK SCHEDULE setup
 *******************************************/
 
-var taskSchedule = new SCHEDULE.RecurrenceRule();
+var taskSchedule = new schedule.RecurrenceRule();
 taskSchedule.minute = 0;
 taskSchedule.hour = 16;
 
@@ -18,42 +18,68 @@ taskSchedule.hour = 16;
 ** DISCORD setup
 *******************************************/
 
-const DISCORD = require("discord.js");
-const CLIENT = new DISCORD.Client();
-const TOKEN = CONFIG.discord.token;
+const discord = require("discord.js");
+const client = new discord.Client();
+const token = config.discord.token;
 
 // Set the prefix
-const PREFIX = ".";
+const prefix = ".";
 
 
 /*******************************************
 ** EVE setup
 *******************************************/
 
-const CLIENT_ID = CONFIG.eve.client_id;
-const CLIENT_SECRET = CONFIG.eve.client_secret;
-const ESI_URL = CONFIG.eve.url;
-const DATASOURCE = CONFIG.eve.datasource;
+const client_id = config.eve.client_id;
+const client_secret = config.eve.client_secret;
+const esi_url = config.eve.url;
+const datasource = config.eve.datasource;
 
 
 /*******************************************
 ** MYSQL setup
 *******************************************/
-const MYSQL = require('mysql');
-var connection = MYSQL.createConnection({
-    host     : CONFIG.mysql.host,
-    user     : CONFIG.mysql.user,
-    password : CONFIG.mysql.password,
-    database : CONFIG.mysql.database
+
+const mysql = require('mysql');
+var connection = mysql.createConnection({
+    host     : config.mysql.host,
+    user     : config.mysql.user,
+    password : config.mysql.password,
+    database : config.mysql.database
 });
 
+
+/*******************************************
+** EXPRESS
+*******************************************/
+
+const express = require('express');
+var app = express();
+
+app.get('/', (req, res) => {
+
+    login({client_id, client_secret, redirect_uri, scope}, res);
+
+});
+
+app.get('/callback', (req, res) => {
+
+	console.log(req.query.code);
+	code = req.query.code;
+	//authInit(code,getTokens);
+	res.send('Done');
+
+});
+
+app.listen(config.auth.port);
+console.log('Server started! At http://localhost: ' + config.auth.port);
 
 /*******************************************
 **  FUNCTIONS
 *******************************************/
 
 function getActiveJobs(corp) {
-    var deferred = Q.defer();
+    var deferred = q.defer();
 
     var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status=? AND eveJobs.corporationID=?';
     var query = connection.query(sql_query, ['active',corp], function (error, results, fields)
@@ -70,7 +96,7 @@ function getActiveJobs(corp) {
 }
 
 function getReadyJobs(corp) {
-    var deferred = Q.defer();
+    var deferred = q.defer();
 
     var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date < now() AND eveJobs.status=? AND eveJobs.corporationID=?';
     var query = connection.query(sql_query, ['active',corp], function (error, results, fields)
@@ -87,7 +113,7 @@ function getReadyJobs(corp) {
 }
 
 function getNextJobs(corp) {
-    var deferred = Q.defer();
+    var deferred = q.defer();
 
     var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status = ? AND eveJobs.corporationID=? ORDER BY eveJobs.end_date';
     var query = connection.query(sql_query, ['active',corp], function (error, results, fields)
@@ -104,7 +130,7 @@ function getNextJobs(corp) {
 }
 
 function getReadyJobsCount(corp) {
-    var deferred = Q.defer();
+    var deferred = q.defer();
 
     var sql_query = 'SELECT COUNT(eveJobs.job_id) AS jobCount, eveJobs.installer_id, eveJobs.characterName FROM eveJobs WHERE eveJobs.end_date < now() AND eveJobs.status=? AND eveJobs.corporationID=? GROUP BY eveJobs.installer_id ORDER BY COUNT(eveJobs.job_id) DESC';
     var query = connection.query(sql_query, ['active',corp], function (error, results, fields)
@@ -121,7 +147,7 @@ function getReadyJobsCount(corp) {
 }
 
 function getActiveJobsList(corp) {
-    var deferred = Q.defer();
+    var deferred = q.defer();
 
     var sql_query = 'SELECT * FROM eveJobs WHERE eveJobs.end_date > now() AND eveJobs.status = ? AND eveJobs.corporationID=? ORDER BY eveJobs.end_date';
     var query = connection.query(sql_query, ['active',corp], function (error, results, fields)
@@ -138,7 +164,7 @@ function getActiveJobsList(corp) {
 }
 
 function getUser(discordUser) {
-    var deferred = Q.defer();
+    var deferred = q.defer();
 
     var sql_query = 'SELECT * FROM users WHERE users.discordID=?';
     var query = connection.query(sql_query, [discordUser], function (error, results, fields)
@@ -155,7 +181,7 @@ function getUser(discordUser) {
 }
 
 function getCorpName(corporationID) {
-    var deferred = Q.defer();
+    var deferred = q.defer();
 
     var sql_query = 'SELECT * FROM corporations WHERE corporations.corporationID=?';
     var query = connection.query(sql_query, [corporationID], function (error, results, fields)
@@ -176,17 +202,17 @@ function getCorpName(corporationID) {
 ** DISCORD
 *******************************************/
 
-CLIENT.on("ready", () => {
-    console.log(`Bot has started, with ${CLIENT.users.size} users, in ${CLIENT.channels.size} channels of ${CLIENT.guilds.size} guilds.`);
-    CLIENT.user.setPresence({ game: { name: 'with BPOs', type: 0 } });
+client.on("ready", () => {
+    console.log(`Bot has started, with ${client.users.size} users, in ${client.channels.size} channels of ${client.guilds.size} guilds.`);
+    client.user.setPresence({ game: { name: 'with BPOs', type: 0 } });
 });
 
-CLIENT.on("message", (message) => {
+client.on("message", (message) => {
 	if(message.author.bot) return;
-	if(message.content.indexOf(PREFIX) !== 0) return;
+	if(message.content.indexOf(prefix) !== 0) return;
 
-	const ARGS = message.content.slice(PREFIX.length).trim().toLowerCase().split(/ +/g);
-	const COMMAND = ARGS.shift().toLowerCase();
+	const args = message.content.slice(prefix.length).trim().toLowerCase().split(/ +/g);
+	const command = args.shift().toLowerCase();
 
     /*
         aniles 122341111460003840
@@ -197,22 +223,22 @@ CLIENT.on("message", (message) => {
 	}
     */
 
-	if (COMMAND  === 'help') {
+	if (command  === 'help') {
 		message.channel.send('**Dir ist nicht zu helfen**');
 	}
 
-	if (COMMAND  === 'ping') {
+	if (command  === 'ping') {
         var now = new Date();
         message.author.send('Replying at ' + now);
         message.channel.send('**I have send you a DM.**');
 
 	}
 
-    if (COMMAND  === 'list') {
-        Q.all([getUser(message.author.id)]).spread(function(user) {
+    if (command  === 'list') {
+        q.all([getUser(message.author.id)]).spread(function(user) {
             if (user.length != 0) {
                 for(var i=0;i<user.length;i++) {
-                    Q.all([getActiveJobs(user[i].corporationID),getReadyJobs(user[i].corporationID),getNextJobs(user[i].corporationID),getReadyJobsCount(user[i].corporationID),getActiveJobsList(user[i].corporationID),getCorpName(user[i].corporationID)]).spread(function(active,ready,next,count,list,corp) {
+                    q.all([getActiveJobs(user[i].corporationID),getReadyJobs(user[i].corporationID),getNextJobs(user[i].corporationID),getReadyJobsCount(user[i].corporationID),getActiveJobsList(user[i].corporationID),getCorpName(user[i].corporationID)]).spread(function(active,ready,next,count,list,corp) {
                         var msg = '**Job list for ' + corp[0].corporationName + '**\nThere are **' + active.length + '** active jobs and **' + ready.length + '** jobs ready.';
                         if(count.length != 0) {
                             msg += ' *(';
@@ -257,11 +283,11 @@ CLIENT.on("message", (message) => {
         }).done();
 	}
 
-    if (COMMAND  === 'info') {
-        Q.all([getUser(message.author.id)]).spread(function(user) {
+    if (command  === 'info') {
+        q.all([getUser(message.author.id)]).spread(function(user) {
             if (user.length != 0) {
                 for(var i=0;i<user.length;i++) {
-                    Q.all([getActiveJobs(user[i].corporationID),getReadyJobs(user[i].corporationID),getNextJobs(user[i].corporationID),getCorpName(user[i].corporationID)]).spread(function(active,ready,next,corp) {
+                    q.all([getActiveJobs(user[i].corporationID),getReadyJobs(user[i].corporationID),getNextJobs(user[i].corporationID),getCorpName(user[i].corporationID)]).spread(function(active,ready,next,corp) {
                         if (next.length != 0) {
                             var currentDate = new Date();
                             var difference = next[0].end_date.getTime() - currentDate.getTime();
@@ -287,15 +313,15 @@ CLIENT.on("message", (message) => {
         }).done();
     }
 
-	if (COMMAND === 'rm') {
-        if (ARGS.length != 4) {
+	if (command === 'rm') {
+        if (args.length != 4) {
             return message.channel.send(`Invalid input use: *.rm [0...\∞] [0...23] [0...60] <comment>*, ${message.author}!`);
         }
 
-        var rm_d = parseInt(ARGS[0]);
-        var rm_h = parseInt(ARGS[1]);
-        var rm_m = parseInt(ARGS[2]);
-        var rm_c = ARGS[3];
+        var rm_d = parseInt(args[0]);
+        var rm_h = parseInt(args[1]);
+        var rm_m = parseInt(args[2]);
+        var rm_c = args[3];
 
         if (isNaN(rm_d)) {
             return message.reply('1 Invalid input use: *.rm [0...\∞] [0...23] [0...60] <comment>*');
@@ -321,12 +347,12 @@ CLIENT.on("message", (message) => {
 });
 
 function start() {
-    var dmUser = CLIENT.users.get('120982046817386499');
+    var dmUser = client.users.get('120982046817386499');
 
 
-    Q.all([getUser('120982046817386499')]).spread(function(user) {
+    q.all([getUser('120982046817386499')]).spread(function(user) {
         for(var i=0;i<user.length;i++) {
-            Q.all([getActiveJobs(user[i].corporationID),getReadyJobs(user[i].corporationID),getNextJobs(user[i].corporationID),getCorpName(user[i].corporationID)]).spread(function(active,ready,next,corp) {
+            q.all([getActiveJobs(user[i].corporationID),getReadyJobs(user[i].corporationID),getNextJobs(user[i].corporationID),getCorpName(user[i].corporationID)]).spread(function(active,ready,next,corp) {
                 if (next.length != 0) {
                     var currentDate = new Date();
                     var difference = next[0].end_date.getTime() - currentDate.getTime();
@@ -349,12 +375,12 @@ function start() {
 }
 
 function dm() {
-    var duser = CLIENT.users.get('120982046817386499');
+    var duser = client.users.get('120982046817386499');
     duser.send('<content>');
 }
 
 
-SCHEDULE.scheduleJob(taskSchedule, start);
+schedule.scheduleJob(taskSchedule, start);
 //console.log('The schdule has been initialzed');
 
-CLIENT.login(TOKEN);
+client.login(token);
