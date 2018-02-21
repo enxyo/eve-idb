@@ -34,10 +34,7 @@ const client_id = config.eve.client_id;
 const client_secret = config.eve.client_secret;
 const esi_url = config.eve.url;
 const datasource = config.eve.datasource;
-<<<<<<< HEAD
 const scope =  config.auth.scopes;
-=======
->>>>>>> 2fc01960a372ce9a5c4c34edb1668c132eff4176
 
 
 /*******************************************
@@ -82,10 +79,7 @@ console.log('Server started! At http://localhost: ' + config.auth.port);
 **  FUNCTIONS
 *******************************************/
 
-<<<<<<< HEAD
 // Get all active jobs for given corp from database.
-=======
->>>>>>> 2fc01960a372ce9a5c4c34edb1668c132eff4176
 function getActiveJobs(corp) {
     var deferred = q.defer();
 
@@ -103,10 +97,7 @@ function getActiveJobs(corp) {
     return deferred.promise;
 }
 
-<<<<<<< HEAD
 // Get all ready jobs for given corp from database.
-=======
->>>>>>> 2fc01960a372ce9a5c4c34edb1668c132eff4176
 function getReadyJobs(corp) {
     var deferred = q.defer();
 
@@ -124,10 +115,7 @@ function getReadyJobs(corp) {
     return deferred.promise;
 }
 
-<<<<<<< HEAD
 // Get all active jobs for given corp from database ordered by end date first. Used for getting the next ready job(s).
-=======
->>>>>>> 2fc01960a372ce9a5c4c34edb1668c132eff4176
 function getNextJobs(corp) {
     var deferred = q.defer();
 
@@ -145,10 +133,7 @@ function getNextJobs(corp) {
     return deferred.promise;
 }
 
-<<<<<<< HEAD
 // Get number of ready jobs per installer for given corporation.
-=======
->>>>>>> 2fc01960a372ce9a5c4c34edb1668c132eff4176
 function getReadyJobsCount(corp) {
     var deferred = q.defer();
 
@@ -166,10 +151,7 @@ function getReadyJobsCount(corp) {
     return deferred.promise;
 }
 
-<<<<<<< HEAD
 // Get all active jobs for given corp from database ordered by end date first. Used for list all active job(s).
-=======
->>>>>>> 2fc01960a372ce9a5c4c34edb1668c132eff4176
 function getActiveJobsList(corp) {
     var deferred = q.defer();
 
@@ -187,10 +169,7 @@ function getActiveJobsList(corp) {
     return deferred.promise;
 }
 
-<<<<<<< HEAD
 // Check for discord user in database and use it for getting associated corp id.
-=======
->>>>>>> 2fc01960a372ce9a5c4c34edb1668c132eff4176
 function getUser(discordUser) {
     var deferred = q.defer();
 
@@ -208,10 +187,7 @@ function getUser(discordUser) {
     return deferred.promise;
 }
 
-<<<<<<< HEAD
 // Get corp name from database for given corp id.
-=======
->>>>>>> 2fc01960a372ce9a5c4c34edb1668c132eff4176
 function getCorpName(corporationID) {
     var deferred = q.defer();
 
