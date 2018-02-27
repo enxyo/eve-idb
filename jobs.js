@@ -4,7 +4,7 @@ const request = require('request');
 const schedule = require('node-schedule');
 
 var taskSchedule = new schedule.RecurrenceRule();
-taskSchedule.minute = 50; //run every hour @:50
+taskSchedule.minute = 11; //run every hour @:50
 
 /*******************************************
 ** EVE setup
@@ -39,12 +39,10 @@ function getToken(characterID, callback) {
 	var sql_query = 'SELECT tokens.characterID, tokens.refreshToken FROM tokens WHERE tokens.characterID = ?';
 	connection.query(sql_query, [characterID], function (error, results, fields)
 	{
-		if (error) return console.log('ERROR: An unexpected SQL error occured.');
-
+		if (error) return console.log('ERROR: An unexpected SQL error occured. In function getToken');
 		refresh_token = results[0].refreshToken;
 		callback(refresh_token, getData);
 	});
-	//console.log(query.sql);
 }
 
 //Get new access token
@@ -114,10 +112,12 @@ function printData(callback) {
 	if(json_body.hasOwnProperty('successful_runs'))	var successful_runs = json_body[i].successful_runs;
 
 	for (var i=0; i<json_body.length; i++) {
-		var sql_query = 'INSERT INTO jobs (jobs.job_id, jobs.installer_id, jobs.facility_id, jobs.location_id, jobs.activity_id, jobs.blueprint_id, jobs.blueprint_type_id, jobs.blueprint_location_id, jobs.output_location_id, jobs.runs, jobs.status, jobs.duration, jobs.start_date, jobs.end_date, jobs.cost, jobs.licensed_runs, jobs.probability, jobs.product_type_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE jobs.status=?, jobs.completed_date=?, jobs.completed_character_id=?, jobs.successful_runs=?';
-		var query = connection.query(sql_query, [json_body[i].job_id, json_body[i].installer_id, json_body[i].facility_id, json_body[i].location_id, json_body[i].activity_id, json_body[i].blueprint_id, json_body[i].blueprint_type_id, json_body[i].blueprint_location_id, json_body[i].output_location_id, json_body[i].runs, json_body[i].status, json_body[i].duration, json_body[i].start_date, json_body[i].end_date, json_body[i].cost, json_body[i].licensed_runs, json_body[i].probability, json_body[i].product_type_id, json_body[i].status, completed_date, completed_character_id, successful_runs], function (error, results, fields)
+        var sd = json_body[i].start_date.replace(/T/, ' ').replace(/\Z/g, '');
+        var ed = json_body[i].end_date.replace(/T/, ' ').replace(/\Z/g, '');
+		var sql_query = 'INSERT INTO jobs (jobs.job_id, jobs.installer_id, jobs.facility_id, jobs.location_id, jobs.activity_id, jobs.blueprint_id, jobs.blueprint_type_id, jobs.blueprint_location_id, jobs.output_location_id, jobs.runs, jobs.status, jobs.duration, jobs.start_date, jobs.end_date, jobs.cost, jobs.licensed_runs, jobs.probability, jobs.product_type_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE jobs.status=?';
+		var query = connection.query(sql_query, [json_body[i].job_id, json_body[i].installer_id, json_body[i].facility_id, json_body[i].location_id, json_body[i].activity_id, json_body[i].blueprint_id, json_body[i].blueprint_type_id, json_body[i].blueprint_location_id, json_body[i].output_location_id, json_body[i].runs, json_body[i].status, json_body[i].duration, sd, ed, json_body[i].cost, json_body[i].licensed_runs, json_body[i].probability, json_body[i].product_type_id, json_body[i].status], function (error, results, fields)
 		{
-			if (error) return console.log('ERROR: An unexpected SQL error occured.');
+			if (error) return console.log('ERROR: An unexpected SQL error occured. In function printData');
 			if( 0 === --pending ) {
                 callback(); //callback if all queries are processed
             }
@@ -133,6 +133,7 @@ function doneData() {
 
 function start() {
 	getToken(CHARID,tokenRefresh);
+    console.log(CHARID);
 	console.log('executed scheduled job');
 }
 
