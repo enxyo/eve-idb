@@ -2,9 +2,13 @@ const config = require('./cfg/config');
 const qs = require('querystring');
 const request = require('request');
 const schedule = require('node-schedule');
+const moment = require('moment');
 
 var taskSchedule = new schedule.RecurrenceRule();
 taskSchedule.minute = 11; //run every hour @:50
+
+var time;
+var time_format;
 
 /*******************************************
 ** EVE setup
@@ -122,7 +126,7 @@ function printData(callback) {
                 callback(); //callback if all queries are processed
             }
 		});
-		console.log(query.sql);
+		//console.log(query.sql);
 	}
 
 }
@@ -133,10 +137,15 @@ function doneData() {
 
 function start() {
 	getToken(CHARID,tokenRefresh);
-    console.log(CHARID);
-	console.log('executed scheduled job');
+    time = moment();
+    time_format = time.format('YYYY-MM-DD HH:mm:ss Z');
+    //console.log(CHARID);
+	console.log(time_format + ' executed scheduled job');
 }
 
 schedule.scheduleJob(taskSchedule, start);
 
-console.log('The schdule has been initialzed');
+time = moment();
+time_format = time.format('YYYY-MM-DD HH:mm:ss Z');
+
+console.log(time_format + ' The schdule has been initialzed');
